@@ -4,7 +4,7 @@ LDFLAGS = -lglfw -lvulkan -ldl -lpthread -lX11 -lXrandr -lcglm -lm -lstb -lassim
 test: Vulkan
 	./Vulkan
 
-Vulkan: main.c engine/engine.c engine/window.c
+Vulkan: main.c engine/engine.*
 	gcc $(CFLAGS) -o Vulkan main.c engine/*.c $(LDFLAGS)
 
 .PHONY: clean
