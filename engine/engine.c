@@ -56,6 +56,11 @@ void engineRun(Engine *engine) {
 void engineDestroy(Engine *engine) {
   engineDestroySwapChain(engine);
 
+  for (int n = 0; n < engine->pipelineCount; n++) {
+    vkDestroyPipeline(engine->device, engine->pipelines[n].graphicsPipeline, NULL);
+    vkDestroyPipelineLayout(engine->device, engine->pipelines[n].pipelineLayout, NULL);
+  }
+
   for (int n = 0; n < MAX_FRAMES_IN_FLIGHT; n++) {
     vkDestroySemaphore(engine->device, engine->imageAvailableSemaphores[n], NULL);
     vkDestroySemaphore(engine->device, engine->renderFinishedSemaphores[n], NULL);
@@ -69,6 +74,14 @@ void engineDestroy(Engine *engine) {
   vkDestroyInstance(engine->instance, NULL);
   glfwDestroyWindow(engine->window);
   free(engine);
+}
+
+void engineAddPipeline(Engine *engine, Pipeline pipeline) {
+  if (engine->pipelineCount == MAX_PIPELINES) {
+    printf("Too many pipelines!\n");
+    exit(1);
+  }
+  engine->pipelines[engine->pipelineCount++] = pipeline;
 }
 
 // Private functions
@@ -526,6 +539,11 @@ void engineDrawFrame(Engine *engine) {
   scissor.offset.y = 0;
   scissor.extent = engine->extent;
   vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+  for (int n = 0; n < engine->pipelineCount; n++) {
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelines[n].graphicsPipeline);
+    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+  }
 
   vkCmdEndRenderPass(commandBuffer);
 
