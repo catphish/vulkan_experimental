@@ -23,6 +23,7 @@ void engineCreateImage(Engine *engine, uint32_t width, uint32_t height, VkFormat
 void engineCreateImageView(Engine *engine, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView *imageView);
 void engineDestroySwapChain(Engine *engine);
 void engineDrawFrame(Engine *engine);
+void enginePipelineLayoutCreate(Engine *engine);
 
 // Public Functions
 
@@ -42,6 +43,7 @@ Engine *engineCreate(void) {
   engineCreateSyncObjects(engine);
 
   engineCreateSwapChain(engine);
+  enginePipelineLayoutCreate(engine);
 
   return engine;
 }
@@ -57,9 +59,9 @@ void engineDestroy(Engine *engine) {
   engineDestroySwapChain(engine);
 
   for (int n = 0; n < engine->pipelineCount; n++) {
-    vkDestroyPipeline(engine->device, engine->pipelines[n].graphicsPipeline, NULL);
-    vkDestroyPipelineLayout(engine->device, engine->pipelines[n].pipelineLayout, NULL);
+    vkDestroyPipeline(engine->device, engine->pipelines[n], NULL);
   }
+  vkDestroyPipelineLayout(engine->device, engine->pipelineLayout, NULL);
 
   for (int n = 0; n < MAX_FRAMES_IN_FLIGHT; n++) {
     vkDestroySemaphore(engine->device, engine->imageAvailableSemaphores[n], NULL);
@@ -76,7 +78,7 @@ void engineDestroy(Engine *engine) {
   free(engine);
 }
 
-void engineAddPipeline(Engine *engine, Pipeline pipeline) {
+void engineAddPipeline(Engine *engine, VkPipeline pipeline) {
   if (engine->pipelineCount == MAX_PIPELINES) {
     printf("Too many pipelines!\n");
     exit(1);
@@ -541,7 +543,7 @@ void engineDrawFrame(Engine *engine) {
   vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
   for (int n = 0; n < engine->pipelineCount; n++) {
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelines[n].graphicsPipeline);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, engine->pipelines[n]);
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
   }
 
@@ -591,4 +593,14 @@ void engineDrawFrame(Engine *engine) {
 
   engine->currentFrame++;
   engine->currentFrame %= MAX_FRAMES_IN_FLIGHT;
+}
+
+void enginePipelineLayoutCreate(Engine *engine) {
+  VkPipelineLayoutCreateInfo pipelineLayoutInfo;
+  memset(&pipelineLayoutInfo, 0, sizeof(VkPipelineLayoutCreateInfo));
+  pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  if (vkCreatePipelineLayout(engine->device, &pipelineLayoutInfo, NULL, &engine->pipelineLayout) != VK_SUCCESS) {
+    printf("Failed to create pipeline layout!\n");
+    exit(1);
+  }
 }

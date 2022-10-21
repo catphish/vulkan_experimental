@@ -20,8 +20,10 @@ VkShaderModule createShaderModule(Engine* engine, char* path) {
   return shaderModule;
 }
 
-Pipeline pipelineCreate(Engine* engine) {
-  Pipeline pipeline;
+VkPipeline pipelineCreate(Engine* engine) {
+  VkPipeline pipeline;
+
+  // Shaders
   VkShaderModule vertShaderModule = createShaderModule(engine, "shaders/triangle.vert.spv");
   VkShaderModule fragShaderModule = createShaderModule(engine, "shaders/triangle.frag.spv");
 
@@ -41,6 +43,7 @@ Pipeline pipelineCreate(Engine* engine) {
 
   VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
+  // Vertex input
   VkPipelineVertexInputStateCreateInfo vertexInputInfo;
   memset(&vertexInputInfo, 0, sizeof(VkPipelineVertexInputStateCreateInfo));
   vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -53,12 +56,7 @@ Pipeline pipelineCreate(Engine* engine) {
   inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
   inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-  VkPipelineViewportStateCreateInfo viewportState;
-  memset(&viewportState, 0, sizeof(VkPipelineViewportStateCreateInfo));
-  viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-  viewportState.viewportCount = 1;
-  viewportState.scissorCount = 1;
-
+  // Rassterizer
   VkPipelineRasterizationStateCreateInfo rasterizer;
   memset(&rasterizer, 0, sizeof(VkPipelineRasterizationStateCreateInfo));
   rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -70,12 +68,14 @@ Pipeline pipelineCreate(Engine* engine) {
   rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
   rasterizer.depthBiasEnable = VK_FALSE;
 
+  // Multisampling
   VkPipelineMultisampleStateCreateInfo multisampling;
   memset(&multisampling, 0, sizeof(VkPipelineMultisampleStateCreateInfo));
   multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
   multisampling.sampleShadingEnable = VK_FALSE;
   multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
+  // Color blending
   VkPipelineColorBlendAttachmentState colorBlendAttachment;
   memset(&colorBlendAttachment, 0, sizeof(VkPipelineColorBlendAttachmentState));
   colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -93,6 +93,13 @@ Pipeline pipelineCreate(Engine* engine) {
   colorBlending.blendConstants[2] = 0.0f;
   colorBlending.blendConstants[3] = 0.0f;
 
+  // Dynamic viewport
+  VkPipelineViewportStateCreateInfo viewportState;
+  memset(&viewportState, 0, sizeof(VkPipelineViewportStateCreateInfo));
+  viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+  viewportState.viewportCount = 1;
+  viewportState.scissorCount = 1;
+
   VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
   VkPipelineDynamicStateCreateInfo dynamicState;
   memset(&dynamicState, 0, sizeof(VkPipelineDynamicStateCreateInfo));
@@ -100,17 +107,7 @@ Pipeline pipelineCreate(Engine* engine) {
   dynamicState.dynamicStateCount = 2;
   dynamicState.pDynamicStates = dynamicStates;
 
-  VkPipelineLayoutCreateInfo pipelineLayoutInfo;
-  memset(&pipelineLayoutInfo, 0, sizeof(VkPipelineLayoutCreateInfo));
-  pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  pipelineLayoutInfo.setLayoutCount = 0;
-  pipelineLayoutInfo.pushConstantRangeCount = 0;
-
-  if (vkCreatePipelineLayout(engine->device, &pipelineLayoutInfo, NULL, &pipeline.pipelineLayout) != VK_SUCCESS) {
-    printf("Failed to create pipeline layout!\n");
-    exit(EXIT_FAILURE);
-  }
-
+  // Depth stencil
   VkPipelineDepthStencilStateCreateInfo depthStencil;
   memset(&depthStencil, 0, sizeof(VkPipelineDepthStencilStateCreateInfo));
   depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -122,6 +119,7 @@ Pipeline pipelineCreate(Engine* engine) {
   depthStencil.maxDepthBounds = 1.0f;  // Optional
   depthStencil.stencilTestEnable = VK_FALSE;
 
+  // Create the pipeline
   VkGraphicsPipelineCreateInfo pipelineInfo;
   memset(&pipelineInfo, 0, sizeof(VkGraphicsPipelineCreateInfo));
   pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -134,7 +132,7 @@ Pipeline pipelineCreate(Engine* engine) {
   pipelineInfo.pMultisampleState = &multisampling;
   pipelineInfo.pColorBlendState = &colorBlending;
   pipelineInfo.pDynamicState = &dynamicState;
-  pipelineInfo.layout = pipeline.pipelineLayout;
+  pipelineInfo.layout = engine->pipelineLayout;
   pipelineInfo.renderPass = engine->renderPass;
   pipelineInfo.subpass = 0;
   pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -142,7 +140,7 @@ Pipeline pipelineCreate(Engine* engine) {
   pipelineInfo.basePipelineIndex = -1;
   pipelineInfo.pDepthStencilState = &depthStencil;
 
-  if (vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &pipeline.graphicsPipeline) != VK_SUCCESS) {
+  if (vkCreateGraphicsPipelines(engine->device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &pipeline) != VK_SUCCESS) {
     printf("Failed to create graphics pipeline!\n");
     exit(EXIT_FAILURE);
   }

@@ -6,11 +6,6 @@
 #define MAX_FRAMES_IN_FLIGHT 2
 #define MAX_PIPELINES 32
 
-typedef struct pipeline {
-  VkPipelineLayout pipelineLayout;
-  VkPipeline graphicsPipeline;
-} Pipeline;
-
 typedef struct engine {
   GLFWwindow* window;
   VkInstance instance;
@@ -41,8 +36,9 @@ typedef struct engine {
 
   int currentFrame;
 
+  VkPipelineLayout pipelineLayout;
   int pipelineCount;
-  Pipeline pipelines[MAX_PIPELINES];
+  VkPipeline pipelines[MAX_PIPELINES];
 } Engine;
 
 typedef struct fileData {
@@ -53,7 +49,7 @@ typedef struct fileData {
 Engine* engineCreate(void);
 void engineRun(Engine* engine);
 void engineDestroy(Engine* engine);
-void engineAddPipeline(Engine* engine, Pipeline pipeline);
+void engineAddPipeline(Engine* engine, VkPipeline pipeline);
 
-Pipeline pipelineCreate(Engine* engine);
+VkPipeline pipelineCreate(Engine* engine);
 FileData readFile(char* path);
